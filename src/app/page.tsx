@@ -1,15 +1,6 @@
-import { getDb, ensureSchema, type Post } from "@/lib/db";
+import { query, ensureSchema, type Post } from "@/lib/db";
 import Link from "next/link";
 import { Feed } from "./feed";
-
-async function getPosts(): Promise<Post[]> {
-  const sql = getDb();
-  await ensureSchema();
-  return (await sql`
-    SELECT id, title, url, body, author, points, created_at
-    FROM hn_posts ORDER BY points DESC, created_at DESC LIMIT 50
-  `) as unknown as Post[];
-}
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +8,8 @@ export default async function Home() {
   let posts: Post[] = [];
   let error: string | null = null;
   try {
-    posts = await getPosts();
+    await ensureSchema();
+    posts = (await query("SELECT id, title, url, body, author, points, created_at FROM hn_posts ORDER BY points DESC, created_at DESC LIMIT 50")) as Post[];
   } catch (e) {
     error = e instanceof Error ? e.message : String(e);
   }
@@ -37,7 +29,7 @@ export default async function Home() {
       {error ? (
         <div className="bg-red-50 border border-red-200 p-4 m-2 text-sm">
           <p className="font-bold text-red-800">DB Error</p>
-          <p className="text-red-600 mt-1 font-mono text-xs">{error}</p>
+          <p className="text-red-600 mt-1 font-mono text-xs break-all">{error}</p>
         </div>
       ) : (
         <Feed posts={posts} />
